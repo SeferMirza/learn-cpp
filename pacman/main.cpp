@@ -2,6 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <list>
 
 const char *map = R""""(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X   Y    XXXX      Y      XXXX    Y   X
@@ -44,24 +45,53 @@ sf::RectangleShape Feed(int x, int y)
     return rectangle;
 }
 
+bool CanMove(std::vector<sf::RectangleShape> objects, int targetX, int targetY)
+{
+    for (sf::RectangleShape object : objects)
+    {
+        sf::Vector2f position = object.getPosition();
+        if(position.x == targetX && position.y == targetY)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void BaitFeed(std::vector<sf::RectangleShape>& feeds, int targetX, int targetY)
+{
+    int indexToEraseFeed = 0;
+    for (sf::RectangleShape feed : feeds)
+    {
+        sf::Vector2f position = feed.getPosition();
+        if(position.x == targetX && position.y == targetY)
+        {
+            if (indexToEraseFeed < feeds.size()) {
+                feeds.erase(feeds.begin() + indexToEraseFeed);
+            }
+        }
+
+        indexToEraseFeed += 1;
+    }
+}
+
 int main()
 {
     std::vector<sf::RectangleShape> walls;
+    std::vector<sf::RectangleShape> feeds;
 
     int x = 0;
     int y = 0;
     for (char c = *map; c; c=*++map)
     {
-        switch (c)
+        if (c == 'X')
         {
-            case 'X':
-                walls.push_back(Wall(x, y));
-                break;
-            case 'Y':
-                walls.push_back(Feed(x, y));
-                break;
-            default:
-                break;
+            walls.push_back(Wall(x, y));
+        }
+        else if (c == 'Y')
+        {
+            feeds.push_back(Feed(x, y));
         }
 
         if (c == '\n')
@@ -89,16 +119,41 @@ int main()
                 window.close();
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::End))
+            {
                 window.close();
+            }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                pacmanXPosition += 1;
+            {
+                if (CanMove(walls, (pacmanXPosition + 1) * 20, pacmanYPosition * 20))
+                {
+                    BaitFeed(feeds, (pacmanXPosition + 1) * 20, pacmanYPosition * 20);
+                    pacmanXPosition += 1;
+                }
+            }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                pacmanXPosition -= 1;
+            {
+                if (CanMove(walls, (pacmanXPosition - 1) * 20, pacmanYPosition * 20))
+                {
+                    BaitFeed(feeds, (pacmanXPosition - 1) * 20, pacmanYPosition * 20);
+                    pacmanXPosition -= 1;
+                }
+            }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                pacmanYPosition -= 1;
+            {
+                if (CanMove(walls, pacmanXPosition * 20, (pacmanYPosition - 1) * 20))
+                {
+                    BaitFeed(feeds, pacmanXPosition * 20, (pacmanYPosition - 1) * 20);
+                    pacmanYPosition -= 1;
+                }
+            }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                pacmanYPosition += 1;
-
+            {
+                if (CanMove(walls, pacmanXPosition * 20, (pacmanYPosition + 1) * 20))
+                {
+                    BaitFeed(feeds, pacmanXPosition * 20, (pacmanYPosition + 1) * 20);
+                    pacmanYPosition += 1;
+                }
+            }
         }
 
         window.clear();
@@ -106,6 +161,11 @@ int main()
         for (sf::RectangleShape wall : walls)
         {
             window.draw(wall);
+        }
+
+        for (sf::RectangleShape feed : feeds)
+        {
+            window.draw(feed);
         }
 
         window.draw(TheMan(pacmanXPosition, pacmanYPosition));
