@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <list>
+#include <cmath>
 
 const char *map = R""""(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X   Y    XXXX      Y      XXXX    Y   X
@@ -45,12 +46,12 @@ sf::RectangleShape Feed(int x, int y)
     return rectangle;
 }
 
-bool CanMove(std::vector<sf::RectangleShape> objects, int targetX, int targetY)
+bool CanMove(std::vector<sf::RectangleShape>& objects, int targetX, int targetY)
 {
     for (sf::RectangleShape object : objects)
     {
         sf::Vector2f position = object.getPosition();
-        if(position.x == targetX && position.y == targetY)
+        if(position.x == floor(targetX) * 20 && position.y == floor(targetY) * 20)
         {
             return false;
         }
@@ -65,9 +66,10 @@ void BaitFeed(std::vector<sf::RectangleShape>& feeds, int targetX, int targetY)
     for (sf::RectangleShape feed : feeds)
     {
         sf::Vector2f position = feed.getPosition();
-        if(position.x == targetX && position.y == targetY)
+        if(position.x == (floor(targetX) * 20) && position.y == (floor(targetY) * 20))
         {
-            if (indexToEraseFeed < feeds.size()) {
+            if (indexToEraseFeed < feeds.size())
+            {
                 feeds.erase(feeds.begin() + indexToEraseFeed);
             }
         }
@@ -75,6 +77,8 @@ void BaitFeed(std::vector<sf::RectangleShape>& feeds, int targetX, int targetY)
         indexToEraseFeed += 1;
     }
 }
+
+enum Direction { right, top, left, bottom, stable };
 
 int main()
 {
@@ -106,9 +110,11 @@ int main()
     }
 
     sf::RenderWindow window(sf::VideoMode(780, 260), "Pacman");
+    window.setFramerateLimit(30);
 
-    int pacmanXPosition = 19;
-    int pacmanYPosition = 8;
+    float pacmanXPosition = 19;
+    float pacmanYPosition = 8;
+    Direction direction = right;
 
     while (window.isOpen())
     {
@@ -116,42 +122,47 @@ int main()
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
+            {
                 window.close();
+            }
 
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::End))
+            if (event.type == sf::Event::KeyPressed)
             {
-                window.close();
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-            {
-                if (CanMove(walls, (pacmanXPosition + 1) * 20, pacmanYPosition * 20))
+                switch (event.key.code)
                 {
-                    BaitFeed(feeds, (pacmanXPosition + 1) * 20, pacmanYPosition * 20);
-                    pacmanXPosition += 1;
-                }
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-            {
-                if (CanMove(walls, (pacmanXPosition - 1) * 20, pacmanYPosition * 20))
-                {
-                    BaitFeed(feeds, (pacmanXPosition - 1) * 20, pacmanYPosition * 20);
-                    pacmanXPosition -= 1;
-                }
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-            {
-                if (CanMove(walls, pacmanXPosition * 20, (pacmanYPosition - 1) * 20))
-                {
-                    BaitFeed(feeds, pacmanXPosition * 20, (pacmanYPosition - 1) * 20);
-                    pacmanYPosition -= 1;
-                }
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-            {
-                if (CanMove(walls, pacmanXPosition * 20, (pacmanYPosition + 1) * 20))
-                {
-                    BaitFeed(feeds, pacmanXPosition * 20, (pacmanYPosition + 1) * 20);
-                    pacmanYPosition += 1;
+                    case sf::Keyboard::Escape:
+                        window.close();
+                        break;
+                    case sf::Keyboard::Right:
+                        if (CanMove(walls, (pacmanXPosition + 1), pacmanYPosition))
+                        {
+                            BaitFeed(feeds, (pacmanXPosition + 1), pacmanYPosition);
+                            direction = right;
+                        }
+                        break;
+                    case sf::Keyboard::Left:
+                        if (CanMove(walls, (pacmanXPosition - 1), pacmanYPosition))
+                        {
+                            BaitFeed(feeds, (pacmanXPosition - 1), pacmanYPosition);
+                            direction = left;
+                        }
+                        break;
+                    case sf::Keyboard::Up:
+                        if (CanMove(walls, pacmanXPosition, (pacmanYPosition - 1)))
+                        {
+                            BaitFeed(feeds, pacmanXPosition, (pacmanYPosition - 1));
+                            direction = top;
+                        }
+                        break;
+                    case sf::Keyboard::Down:
+                        if (CanMove(walls, pacmanXPosition, (pacmanYPosition + 1)))
+                        {
+                            BaitFeed(feeds, pacmanXPosition, (pacmanYPosition + 1));
+                            direction = bottom;
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -166,6 +177,36 @@ int main()
         for (sf::RectangleShape feed : feeds)
         {
             window.draw(feed);
+        }
+
+        switch (direction)
+        {
+            case top:
+                if (CanMove(walls, pacmanXPosition, (pacmanYPosition - 1)))
+                {
+                    pacmanYPosition -= 0.15;
+                }
+                break;
+            case bottom:
+                if (CanMove(walls, pacmanXPosition, (pacmanYPosition + 1)))
+                {
+                    pacmanYPosition += 0.15;
+                }
+                break;
+            case right:
+            if (CanMove(walls, (pacmanXPosition + 1), pacmanYPosition))
+                {
+                    pacmanXPosition += 0.15;
+                }
+                break;
+            case left:
+            if (CanMove(walls, (pacmanXPosition - 1), pacmanYPosition))
+                {
+                    pacmanXPosition -= 0.15;
+                }
+                break;
+            default:
+                break;
         }
 
         window.draw(TheMan(pacmanXPosition, pacmanYPosition));
