@@ -5,7 +5,7 @@
 #include <list>
 #include <cmath>
 
-const char *map = R""""(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+const char map[] = R"(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X   Y    XXXX      Y      XXXX    Y   X
 X XXXXXX XXXX XXXXXXXXXXX XXXX XXXXXX X
 X XXXXXX XXXX XXXXXXXXXXX XXXX XXXXXX X
@@ -17,48 +17,7 @@ X                  P                  X
 X XXXXXX XXXX XXXXXXXXXXX XXXX XXXXXX X
 X XXXXXX XXXX XXXXXXXXXXX XXXX XXXXXX X
 X   Y    XXXX      Y      XXXX    Y   X
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)"""";
-
-sf::RectangleShape Wall(int x, int y)
-{
-    sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
-    rectangle.setFillColor(sf::Color::Blue);
-    rectangle.setPosition(x * 20.f, y * 20.f);
-
-    return rectangle;
-}
-
-sf::RectangleShape TheMan(int x, int y)
-{
-    sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
-    rectangle.setFillColor(sf::Color::Yellow);
-    rectangle.setPosition(x * 20.f, y * 20.f);
-
-    return rectangle;
-}
-
-sf::RectangleShape Feed(int x, int y)
-{
-    sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
-    rectangle.setFillColor(sf::Color::White);
-    rectangle.setPosition(x * 20.f, y * 20.f);
-
-    return rectangle;
-}
-
-bool CanMove(std::vector<sf::RectangleShape>& objects, int targetX, int targetY)
-{
-    for (sf::RectangleShape object : objects)
-    {
-        sf::Vector2f position = object.getPosition();
-        if(position.x == floor(targetX) * 20 && position.y == floor(targetY) * 20)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)";
 
 void BaitFeed(std::vector<sf::RectangleShape>& feeds, int targetX, int targetY)
 {
@@ -80,41 +39,126 @@ void BaitFeed(std::vector<sf::RectangleShape>& feeds, int targetX, int targetY)
 
 enum Direction { right, top, left, bottom, stable };
 
+class Game
+{
+    public:
+        void InitializeGame(const char map[])
+        {
+            int x = 0;
+            int y = 0;
+            for (int i = 0; map[i] != '\0'; ++i)
+            {
+                std::cout << map[i];
+                if (map[i] == 'X')
+                {
+                    sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
+                    rectangle.setFillColor(sf::Color::Blue);
+                    rectangle.setPosition(x * 20.f, y * 20.f);
+                    _walls.push_back(rectangle);
+                }
+                else if (map[i] == 'Y')
+                {
+                    sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
+                    rectangle.setFillColor(sf::Color::White);
+                    rectangle.setPosition(x * 20.f, y * 20.f);
+                    _feeds.push_back(rectangle);
+                }
+                else if (map[i] == 'P')
+                {
+                    sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
+                    rectangle.setFillColor(sf::Color::Red);
+                    rectangle.setPosition(x * 20.f, y * 20.f);
+                    _theMan = rectangle;
+                }
+
+                if (map[i] == '\n')
+                {
+                    y += 1;
+                    x = 0;
+                }
+                else
+                {
+                    x += 1;
+                }
+            }
+        }
+
+        void MoveTheMan(Direction direction)
+        {
+            sf::Vector2f manPosition = _theMan.getPosition();
+            switch (direction)
+            {
+                case top:
+                    if (CanMove(manPosition.x, manPosition.y - 1))
+                    {
+                        _theMan.setPosition(manPosition.x, manPosition.y - 20);
+                    }
+                    break;
+                case bottom:
+                    if (CanMove(manPosition.x, manPosition.y + 1))
+                    {
+                        _theMan.setPosition(manPosition.x, manPosition.y + 20);
+                    }
+                    break;
+                case right:
+                    if (CanMove(manPosition.x + 1, manPosition.y))
+                    {
+                        _theMan.setPosition(manPosition.x + 20, manPosition.y);
+                    }
+                    break;
+                case left:
+                    if (CanMove(manPosition.x - 1, manPosition.y))
+                    {
+                        _theMan.setPosition(manPosition.x - 20, manPosition.y);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        void Draw(sf::RenderWindow &window)
+        {
+            for (sf::RectangleShape wall : _walls)
+            {
+                window.draw(wall);
+            }
+            for (sf::RectangleShape feed : _feeds)
+            {
+                window.draw(feed);
+            }
+            window.draw(_theMan);
+        }
+
+    private:
+        int _level;
+        char* _map;
+        sf::RectangleShape _theMan;
+        std::vector<sf::RectangleShape> _walls;
+        std::vector<sf::RectangleShape> _feeds;
+
+        bool CanMove(int targetX, int targetY)
+        {
+            for (sf::RectangleShape object : _walls)
+            {
+                sf::Vector2f position = object.getPosition();
+                if(position.x == floor(targetX) * 20 && position.y == floor(targetY) * 20)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+};
+
 int main()
 {
-    std::vector<sf::RectangleShape> walls;
-    std::vector<sf::RectangleShape> feeds;
-
-    int x = 0;
-    int y = 0;
-    for (char c = *map; c; c=*++map)
-    {
-        if (c == 'X')
-        {
-            walls.push_back(Wall(x, y));
-        }
-        else if (c == 'Y')
-        {
-            feeds.push_back(Feed(x, y));
-        }
-
-        if (c == '\n')
-        {
-            y += 1;
-            x = 0;
-        }
-        else
-        {
-            x += 1;
-        }
-    }
-
     sf::RenderWindow window(sf::VideoMode(780, 260), "Pacman");
     window.setFramerateLimit(30);
 
-    float pacmanXPosition = 19;
-    float pacmanYPosition = 8;
-    Direction direction = right;
+    Game game;
+    game.InitializeGame(map);
 
     while (window.isOpen())
     {
@@ -134,32 +178,16 @@ int main()
                         window.close();
                         break;
                     case sf::Keyboard::Right:
-                        if (CanMove(walls, (pacmanXPosition + 1), pacmanYPosition))
-                        {
-                            BaitFeed(feeds, (pacmanXPosition + 1), pacmanYPosition);
-                            direction = right;
-                        }
+                        game.MoveTheMan(right);
                         break;
                     case sf::Keyboard::Left:
-                        if (CanMove(walls, (pacmanXPosition - 1), pacmanYPosition))
-                        {
-                            BaitFeed(feeds, (pacmanXPosition - 1), pacmanYPosition);
-                            direction = left;
-                        }
+                        game.MoveTheMan(left);
                         break;
                     case sf::Keyboard::Up:
-                        if (CanMove(walls, pacmanXPosition, (pacmanYPosition - 1)))
-                        {
-                            BaitFeed(feeds, pacmanXPosition, (pacmanYPosition - 1));
-                            direction = top;
-                        }
+                        game.MoveTheMan(top);
                         break;
                     case sf::Keyboard::Down:
-                        if (CanMove(walls, pacmanXPosition, (pacmanYPosition + 1)))
-                        {
-                            BaitFeed(feeds, pacmanXPosition, (pacmanYPosition + 1));
-                            direction = bottom;
-                        }
+                        game.MoveTheMan(bottom);
                         break;
                     default:
                         break;
@@ -169,47 +197,7 @@ int main()
 
         window.clear();
 
-        for (sf::RectangleShape wall : walls)
-        {
-            window.draw(wall);
-        }
-
-        for (sf::RectangleShape feed : feeds)
-        {
-            window.draw(feed);
-        }
-
-        switch (direction)
-        {
-            case top:
-                if (CanMove(walls, pacmanXPosition, (pacmanYPosition - 1)))
-                {
-                    pacmanYPosition -= 0.15;
-                }
-                break;
-            case bottom:
-                if (CanMove(walls, pacmanXPosition, (pacmanYPosition + 1)))
-                {
-                    pacmanYPosition += 0.15;
-                }
-                break;
-            case right:
-            if (CanMove(walls, (pacmanXPosition + 1), pacmanYPosition))
-                {
-                    pacmanXPosition += 0.15;
-                }
-                break;
-            case left:
-            if (CanMove(walls, (pacmanXPosition - 1), pacmanYPosition))
-                {
-                    pacmanXPosition -= 0.15;
-                }
-                break;
-            default:
-                break;
-        }
-
-        window.draw(TheMan(pacmanXPosition, pacmanYPosition));
+        game.Draw(window);
 
         window.display();
     }
