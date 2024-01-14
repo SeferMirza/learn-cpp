@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 class Game
 {
@@ -18,17 +19,22 @@ public:
             }
             else if (map[i] == 'Y')
             {
-                sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
-                rectangle.setFillColor(sf::Color::White);
-                rectangle.setPosition(x * 20.f, y * 20.f);
-                _feeds.push_back(rectangle);
+                sf::CircleShape feed(10);
+                feed.setFillColor(sf::Color::White);
+                feed.setPosition(x * 20.f, y * 20.f);
+                _feeds.push_back(feed);
             }
             else if (map[i] == 'P')
             {
-                sf::RectangleShape rectangle(sf::Vector2f(20.f, 20.f));
-                rectangle.setFillColor(sf::Color::Yellow);
-                rectangle.setPosition(x * 20.f, y * 20.f);
-                _theMan = rectangle;
+                if (!_theManTexture.loadFromFile("pacman.png"))
+                {
+                    // error
+                }
+
+                sf::Sprite sprite;
+                sprite.setTexture(_theManTexture);
+                sprite.setPosition(x * 20.f, y * 20.f);
+                _theMan = sprite;
             }
 
             if (map[i] == '\n')
@@ -61,7 +67,7 @@ public:
         {
             window.draw(wall);
         }
-        for (sf::RectangleShape feed : _feeds)
+        for (sf::CircleShape feed : _feeds)
         {
             window.draw(feed);
         }
@@ -71,9 +77,10 @@ public:
 private:
     int _level;
     char *_map;
-    sf::RectangleShape _theMan;
+    sf::Sprite _theMan;
     std::vector<sf::RectangleShape> _walls;
-    std::vector<sf::RectangleShape> _feeds;
+    std::vector<sf::CircleShape> _feeds;
+    sf::Texture _theManTexture;
 
     bool CanMove(int targetX, int targetY)
     {
@@ -88,10 +95,11 @@ private:
 
         return true;
     }
+
     void BaitFeed(int targetX, int targetY)
     {
         int indexToEraseFeed = 0;
-        for (sf::RectangleShape feed : _feeds)
+        for (sf::CircleShape feed : _feeds)
         {
             sf::Vector2f position = feed.getPosition();
             if (position.x == targetX && position.y == targetY)

@@ -1,5 +1,4 @@
 #include <SFML/Graphics.hpp>
-
 #include "game.cpp"
 
 const char map[] = R"(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -60,7 +59,6 @@ int main()
         }
 
         window.clear();
-
         game.Draw(window);
 
         window.display();
