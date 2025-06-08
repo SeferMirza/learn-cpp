@@ -1,2 +1,2 @@
-[TEMPLATE1](?template=default.md)
-[TEMPLATE2](?template=release.md)
+[TEMPLATE1](?expand=1&template=default.md)
+[TEMPLATE2](?expand=1&template=release.md)
