@@ -1,3 +1,8 @@
+---
+name: Default
+about: Use this template for release branch pull requests
+---
+
 <!-- Place the description of this work here, in one sentence. -->
 
 ## Tasks
